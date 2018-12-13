@@ -13,25 +13,35 @@ import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.MasterNotRunningException;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.ZooKeeperConnectionException;
-import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
-import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.hdfs.server.namenode.decommission_jsp;
 
 
 public class HBaseDemo {
-    //创建Hadoop以及HBased管理配置对象
-    public static Configuration conf;
+//    //创建Hadoop以及HBased管理配置对象
+//    public static Configuration conf;
+//
+//    static {
+////        conf.set("hbase.zookeeper.quorum","127.0.0.1");
+//        //使用HBaseConfiguration的单例方法实例化
+//        conf = HBaseConfiguration.create();
+//    }
+
+
+    // 声明静态配置
+    static Configuration conf = null;
+    static Connection connection = null;
 
     static {
-        //使用HBaseConfiguration的单例方法实例化
-        conf = HBaseConfiguration.create();
+        try {
+            conf = HBaseConfiguration.create();
+            conf.set("hbase.zookeeper.quorum", "127.0.0.1");
+            connection = ConnectionFactory.createConnection(conf);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
+
 
     /**
      * 判断表是否已存在
@@ -41,10 +51,11 @@ public class HBaseDemo {
      * @throws ZooKeeperConnectionException
      * @throws MasterNotRunningException
      */
-    public static boolean isTableExist(String tableName) throws MasterNotRunningException, ZooKeeperConnectionException, IOException {
+    public static boolean isTableExist(String tableName) throws
+            MasterNotRunningException, ZooKeeperConnectionException, IOException {
         //在HBase中管理、访问表需要先创建HBaseAdmin对象
-        HBaseAdmin admin = new HBaseAdmin(conf);
-        return admin.tableExists(tableName);
+        Admin admin = connection.getAdmin();
+        return admin.tableExists(TableName.valueOf(tableName));
     }
 
     /**
@@ -55,8 +66,9 @@ public class HBaseDemo {
      * @throws ZooKeeperConnectionException
      * @throws MasterNotRunningException
      */
-    public static void createTable(String tableName, String... columnFamily) throws MasterNotRunningException, ZooKeeperConnectionException, IOException {
-        HBaseAdmin admin = new HBaseAdmin(conf);
+    public static void createTable(String tableName, String... columnFamily) throws
+            MasterNotRunningException, ZooKeeperConnectionException, IOException {
+        Admin admin = connection.getAdmin();
         //判断表是否存在
         if (isTableExist(tableName)) {
             System.out.println("表" + tableName + "已存在");
@@ -84,11 +96,12 @@ public class HBaseDemo {
      * @throws ZooKeeperConnectionException
      * @throws MasterNotRunningException
      */
-    public static void dropTable(String tableName) throws MasterNotRunningException, ZooKeeperConnectionException, IOException {
-        HBaseAdmin admin = new HBaseAdmin(conf);
+    public static void dropTable(String tableName) throws
+            MasterNotRunningException, ZooKeeperConnectionException, IOException {
+        Admin admin = connection.getAdmin();
         if (isTableExist(tableName)) {
-            admin.disableTable(tableName);
-            admin.deleteTable(tableName);
+            admin.disableTable(TableName.valueOf(tableName));
+            admin.deleteTable(TableName.valueOf(tableName));
             System.out.println("表" + tableName + "删除成功！");
         } else {
             System.out.println("表" + tableName + "不存在！");
@@ -106,17 +119,19 @@ public class HBaseDemo {
      * @param value
      * @throws IOException
      */
-    public static void addRowData(String tableName, String rowKey, String columnFamily, String column, String value) throws IOException {
+    public static void addRowData(String tableName, String rowKey, String columnFamily, String column, String value) throws
+            IOException {
         //创建HTable对象
-        HTable hTable = new HTable(conf, tableName);
+        Table hTable = connection.getTable(TableName.valueOf(tableName));
         //向表中插入数据
         Put put = new Put(Bytes.toBytes(rowKey));
         //向Put对象中组装数据
-        put.add(Bytes.toBytes(columnFamily), Bytes.toBytes(column), Bytes.toBytes(value));
+        put.addColumn(Bytes.toBytes(columnFamily), Bytes.toBytes(column), Bytes.toBytes(value));
         hTable.put(put);
         hTable.close();
         System.out.println("插入数据成功");
     }
+//
 
     /**
      * 删除多行数据
@@ -126,14 +141,14 @@ public class HBaseDemo {
      * @throws IOException
      */
     public static void deleteMultiRow(String tableName, String... rows) throws IOException {
-        HTable hTable = new HTable(conf, tableName);
+        Table Table = connection.getTable(TableName.valueOf(tableName));
         List<Delete> deleteList = new ArrayList<Delete>();
         for (String row : rows) {
             Delete delete = new Delete(Bytes.toBytes(row));
             deleteList.add(delete);
         }
-        hTable.delete(deleteList);
-        hTable.close();
+        Table.delete(deleteList);
+        Table.close();
     }
 
     /**
@@ -143,12 +158,13 @@ public class HBaseDemo {
      * @throws IOException
      */
     public static void getAllRows(String tableName) throws IOException {
-        HTable hTable = new HTable(conf, tableName);
+        Table table = connection.getTable(TableName.valueOf(tableName));
         //得到用于扫描region的对象
         Scan scan = new Scan();
         //使用HTable得到resultcanner实现类的对象
-        ResultScanner resultScanner = hTable.getScanner(scan);
+        ResultScanner resultScanner = table.getScanner(scan);
         for (Result result : resultScanner) {
+            System.out.println("==================================================================");
             Cell[] cells = result.rawCells();
             for (Cell cell : cells) {
                 //得到rowkey
@@ -157,25 +173,25 @@ public class HBaseDemo {
                 System.out.println(Bytes.toString(CellUtil.cloneFamily(cell)));
                 System.out.println(Bytes.toString(CellUtil.cloneQualifier(cell)));
                 System.out.println(Bytes.toString(CellUtil.cloneValue(cell)));
+                System.out.println("--------------------------------");
             }
+            System.out.println("==================================================================");
         }
 
     }
 
     public static void main(String[] args) {
         try {
-            System.out.println(isTableExist("student"));
-            createTable("person", "basic_info", "job", "heathy");
-//				dropTable("person");
-//				addRowData("person", "1001", "basic_info", "name", "Nick");
-//				addRowData("person", "1001", "basic_info", "sex", "Male");
-//				addRowData("person", "1001", "basic_info", "age", "18");
-//				addRowData("person", "1001", "job", "dept_no", "7981");
+//            System.out.println(isTableExist("person"));
+//            createTable("person", "basic_info", "job", "heathy");
+////            dropTable("person");
+            addRowData("person", "1002", "basic_info", "name", "Nick");
+            addRowData("person", "1002", "basic_info", "sex", "Male");
+            addRowData("person", "1002", "basic_info", "age", "18");
+            addRowData("person", "1002", "job", "dept_no", "7981");
 
-//				deleteMultiRow("person", "person");
-//            getAllRows("person");
-
-
+//            deleteMultiRow("person", "1001");
+            getAllRows("person");
         } catch (Exception e) {
             e.printStackTrace();
         }
