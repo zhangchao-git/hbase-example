@@ -29,12 +29,11 @@ public class HBaseDemo {
 
 
     // 声明静态配置
-    static Configuration conf = null;
     static Connection connection = null;
 
     static {
         try {
-            conf = HBaseConfiguration.create();
+            Configuration conf = HBaseConfiguration.create();
             conf.set("hbase.zookeeper.quorum", "127.0.0.1");
             connection = ConnectionFactory.createConnection(conf);
         } catch (Exception e) {
@@ -182,15 +181,15 @@ public class HBaseDemo {
 
     public static void main(String[] args) {
         try {
-//            System.out.println(isTableExist("person"));
-//            createTable("person", "basic_info", "job", "heathy");
-////            dropTable("person");
+            System.out.println(isTableExist("person"));
+            createTable("person", "basic_info", "job", "heathy");
+//            dropTable("person");
             addRowData("person", "1002", "basic_info", "name", "Nick");
             addRowData("person", "1002", "basic_info", "sex", "Male");
             addRowData("person", "1002", "basic_info", "age", "18");
             addRowData("person", "1002", "job", "dept_no", "7981");
 
-//            deleteMultiRow("person", "1001");
+            deleteMultiRow("person", "1001");
             getAllRows("person");
         } catch (Exception e) {
             e.printStackTrace();
