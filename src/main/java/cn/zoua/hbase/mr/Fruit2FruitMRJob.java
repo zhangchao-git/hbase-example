@@ -2,12 +2,14 @@ package cn.zoua.hbase.mr;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 
 import java.io.IOException;
 
@@ -49,4 +51,12 @@ public class Fruit2FruitMRJob extends Configured implements Tool {
         return isSuccess ? 0 : 1;
 
     }
+
+    public static void main(String[] args) throws Exception {
+        Configuration conf = HBaseConfiguration.create();
+
+        int status = ToolRunner.run(conf, new Fruit2FruitMRJob(), args);
+        System.exit(status);
+    }
+
 }
