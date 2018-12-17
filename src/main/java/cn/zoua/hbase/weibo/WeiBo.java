@@ -31,14 +31,22 @@ import org.apache.hadoop.hbase.filter.SubstringComparator;
 import org.apache.hadoop.hbase.util.Bytes;
 
 public class WeiBo {
-    //获取配置conf
+    /**
+     * 获取配置conf
+     */
     private Configuration conf = HBaseConfiguration.create();
 
-    //微博内容表的表名
+    /**
+     * 微博内容表的表名
+     */
     private static final byte[] TABLE_CONTENT = Bytes.toBytes("weibo:content");
-    //用户关系表的表名
+    /**
+     * 用户关系表的表名
+     */
     private static final byte[] TABLE_RELATIONS = Bytes.toBytes("weibo:relations");
-    //微博收件箱表的表名
+    /**
+     * 微博收件箱表的表名
+     */
     private static final byte[] TABLE_RECEIVE_CONTENT_EMAIL = Bytes.toBytes("weibo:receive_content_email");
 
     public void initTable() {
